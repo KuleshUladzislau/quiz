@@ -31,7 +31,6 @@ export default function QuizClient() {
   const [nameInput, setNameInput] = useState("");
   const [quiz, setQuiz] = useState(null);
   const [index, setIndex] = useState(0);
-  const [draft, setDraft] = useState(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [leaving, setLeaving] = useState(false);
@@ -76,11 +75,6 @@ export default function QuizClient() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (screen !== "quiz" || !quiz) return;
-    setDraft(quiz.questions[index]?.selected ?? null);
-  }, [screen, index, quiz]);
 
   useEffect(() => {
     if (screen === "loading") return;
@@ -130,31 +124,49 @@ export default function QuizClient() {
     }
   }
 
-  async function submitCurrent() {
-    const question = quiz.questions[index];
+  function pick(optionIndex) {
+    setQuiz((current) => ({
+      ...current,
+      questions: current.questions.map((question, questionIndex) =>
+        questionIndex === index ? { ...question, selected: optionIndex } : question
+      ),
+    }));
+  }
+
+  function goNext() {
+    if (quiz.questions[index]?.selected == null) return;
+    if (index < quiz.questions.length - 1) {
+      setError("");
+      setIndex(index + 1);
+      return;
+    }
+    submitAll();
+  }
+
+  async function submitAll() {
     setPending(true);
     setError("");
     try {
       const response = await fetch("/api/answers", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ questionId: question.id, selectedIndex: draft }),
+        body: JSON.stringify({
+          answers: quiz.questions.map((question) => ({
+            questionId: question.id,
+            selectedIndex: question.selected,
+          })),
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
-        setError(data.error || "Ответ не сохранился");
+        setError(data.error || "Ответы не сохранились");
         if (response.status === 401) setScreen("name");
         return;
       }
       setQuiz(data);
-      if (data.completed) {
-        setScreen("done");
-        return;
-      }
-      const next = data.questions.findIndex((item) => item.selected == null);
-      setIndex(next === -1 ? index : next);
+      setScreen("done");
     } catch {
-      setError("Нет связи. Ответ не сохранился");
+      setError("Нет связи. Ответы не сохранились");
     } finally {
       setPending(false);
     }
@@ -283,7 +295,7 @@ export default function QuizClient() {
   }
 
   const question = quiz.questions[index];
-  const last = index === quiz.questions.length - 1 && quiz.questions.every((item, itemIndex) => itemIndex === index || item.selected != null);
+  const last = index === quiz.questions.length - 1;
 
   return (
     <main className="app">
@@ -292,15 +304,28 @@ export default function QuizClient() {
           <span className="who-name">{quiz.participant.name}</span>
           <span className="count">{index + 1} из {quiz.total}</span>
         </header>
-        <div
-          className="bar"
-          role="progressbar"
-          aria-valuemin={1}
-          aria-valuemax={quiz.total}
-          aria-valuenow={index + 1}
-          aria-label="Прогресс опроса"
-        >
-          <span style={{ width: `${((index + 1) / quiz.total) * 100}%` }} />
+        <div className="progress-row">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Назад"
+            disabled={index === 0 || pending}
+            onClick={() => setIndex(index - 1)}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path d="M11.5 3.5 6 9l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <div
+            className="bar"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={quiz.total}
+            aria-valuenow={index + 1}
+            aria-label="Прогресс опроса"
+          >
+            <span style={{ width: `${((index + 1) / quiz.total) * 100}%` }} />
+          </div>
         </div>
         <div className="rise" key={question.id}>
           <h1 className="prompt">{question.prompt}</h1>
@@ -310,8 +335,8 @@ export default function QuizClient() {
                 key={`${question.id}-${optionIndex}`}
                 type="button"
                 className="option"
-                aria-pressed={draft === optionIndex}
-                onClick={() => setDraft(optionIndex)}
+                aria-pressed={question.selected === optionIndex}
+                onClick={() => pick(optionIndex)}
               >
                 <span className="letter">{LETTERS[optionIndex]}</span>
                 <span className="label">{option}</span>
@@ -321,12 +346,7 @@ export default function QuizClient() {
         </div>
         {error ? <p className="error" role="alert">{error}</p> : null}
         <div className="dock">
-          {index > 0 ? (
-            <button type="button" className="btn btn-ghost" aria-label="Назад" onClick={() => setIndex(index - 1)} disabled={pending}>
-              ←
-            </button>
-          ) : null}
-          <button type="button" className="btn" disabled={draft == null || pending} onClick={submitCurrent}>
+          <button type="button" className="btn" disabled={question.selected == null || pending} onClick={goNext}>
             {pending ? "Сохраняем…" : last ? "Готово" : "Дальше"}
           </button>
         </div>
