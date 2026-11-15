@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { PARTICIPANT_COOKIE, cookieBase } from "@/lib/auth";
 import { fail, json, readBody } from "@/lib/http";
+import { describeDevice } from "@/lib/device";
 import { createParticipant } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request) {
   try {
     const body = await readBody(request);
-    const participant = await createParticipant(body?.name);
+    const participant = await createParticipant(body?.name, describeDevice(request.headers));
     const jar = await cookies();
     jar.set(PARTICIPANT_COOKIE, participant.id, {
       ...cookieBase(),
