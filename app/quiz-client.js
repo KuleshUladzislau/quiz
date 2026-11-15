@@ -304,28 +304,15 @@ export default function QuizClient() {
           <span className="who-name">{quiz.participant.name}</span>
           <span className="count">{index + 1} из {quiz.total}</span>
         </header>
-        <div className="progress-row">
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label="Назад"
-            disabled={index === 0 || pending}
-            onClick={() => setIndex(index - 1)}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-              <path d="M11.5 3.5 6 9l5.5 5.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <div
-            className="bar"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={quiz.total}
-            aria-valuenow={index + 1}
-            aria-label="Прогресс опроса"
-          >
-            <span style={{ width: `${((index + 1) / quiz.total) * 100}%` }} />
-          </div>
+        <div
+          className="bar"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={quiz.total}
+          aria-valuenow={index + 1}
+          aria-label="Прогресс опроса"
+        >
+          <span style={{ width: `${((index + 1) / quiz.total) * 100}%` }} />
         </div>
         <div className="rise" key={question.id}>
           <h1 className="prompt">{question.prompt}</h1>
@@ -349,6 +336,11 @@ export default function QuizClient() {
           <button type="button" className="btn" disabled={question.selected == null || pending} onClick={goNext}>
             {pending ? "Сохраняем…" : last ? "Готово" : "Дальше"}
           </button>
+          {index > 0 ? (
+            <button type="button" className="btn btn-line" disabled={pending} onClick={() => setIndex(index - 1)}>
+              Назад
+            </button>
+          ) : null}
         </div>
       </section>
     </main>
