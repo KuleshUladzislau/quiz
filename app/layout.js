@@ -1,18 +1,4 @@
-import { Manrope, Unbounded } from "next/font/google";
 import "./globals.css";
-
-const manrope = Manrope({
-  subsets: ["cyrillic", "latin"],
-  variable: "--font-body",
-  display: "swap",
-});
-
-const unbounded = Unbounded({
-  subsets: ["cyrillic", "latin"],
-  weight: ["500", "700"],
-  variable: "--font-display",
-  display: "swap",
-});
 
 export const metadata = {
   title: "Квиз",
@@ -29,7 +15,15 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
+    <html lang="ru">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Unbounded:wght@500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         {children}
         <noscript>
